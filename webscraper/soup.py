@@ -27,12 +27,22 @@ class ReviewCollector(object):
         self.places = {}
         self.breweries = None
 
-    def run(self):
+    def run_parallel(self):
         '''
         Runs review webscraper
         '''
         self.soup = self.get_soup(self.url)
         self.get_location_urls()
+
+        processes = []
+        for location, url in self.locations.iteritems():
+            proc = mp.Process(target=self.get_places_urls,
+                              args=(location, url, ))
+            proc.start()
+            processes.append(proc)
+
+        for proc in processes:
+            proc.join()
 
     def get_soup(self, url):
         '''
@@ -49,13 +59,16 @@ class ReviewCollector(object):
     def get_location_urls(self):
         for tag in self.soup.find_all('div', class_='break'):
             for a in tag.find_all('a'):
-                if 'directory' in a['href']:
+                if 'directory' in a['href'] and 'US' in a['href']:
                     self.locations[a.text] = self.base_url.format(a['href'])
 
-    def get_places_urls(self, location):
-        soup = self.get_soup(self.locations[location])
-        for tag in soup.find('table').find('table').find_all('a'):
-            self.places[tag.text.split()[0]] = self.base_url.format(tag['href'])
+    def get_places_urls(self, location, location_url):
+        soup = self.get_soup(location_url)
+        # for tag in soup.find('table').find('table').find_all('a'):
+        #     self.places[tag.text.split()[0]] = self.base_url.format(tag['href'])
+        # breweries_url = self.places['Breweries']
+        for tag in soup.find('table').find('table').find_all('a')[:1]:
+            self.get_breweries(self.base_url.format(tag['href']))
 
     def get_breweries_urls(self):
         # not using
@@ -66,11 +79,12 @@ class ReviewCollector(object):
                 breweries[self.base_url.format(tag.find('a')['href'])] = tag.find('a').text
         return breweries
 
-    def get_breweries(self):
+    def get_breweries(self, breweries_url):
         urls = []
         names = []
         contacts = []
-        breweries_soup = self.get_soup(self.places['Breweries'])
+        print breweries_url
+        breweries_soup = self.get_soup(breweries_url)
         for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
             urls.append(self.base_url.format(tag.find('a')['href']))
             names.append(tag.find('a').text)
@@ -104,3 +118,6 @@ class ReviewCollector(object):
             url = self.base_url.format(tag.find('a')['href'])
             clean = [x.strip() for x in tag.get_text(', ').split(',')]
             beer_info[url] = dict(zip(titles, clean))
+
+    def scrape_beer_review(self):
+        pass
