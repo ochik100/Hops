@@ -92,22 +92,22 @@ class ReviewCollector(object):
         '''
         urls = []
         breweries_soup = self.get_soup(breweries_url)
-        # page_info = breweries_soup.find('table').find_all('tr')
+        page_info = breweries_soup.find('table').find_all('tr')
 
-        for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
+        for tag in page_info[3:-1:2]:
             urls.append(self.base_url.format(tag.find('a')['href']))
             brewery_url = self.base_url.format(tag.find('a')['href'])
             brewery_name = tag.find('a').text
             self.get_list_of_beers(brewery_url, brewery_name)
 
-        # try:
-        #     next_page = page_info[1].find_all('a')[-2]['href']
-        # except:
-        #     next_page = None
-        #
-        # if next_page:
-        #     url = self.base_url.format(next_page)
-        #     self.get_list_of_breweries(url)
+        try:
+            next_page = page_info[1].find_all('a')[-2]['href']
+        except:
+            next_page = None
+
+        if next_page:
+            url = self.base_url.format(next_page)
+            self.get_list_of_breweries(url)
 
     def get_list_of_beers(self, brewery_url, brewery_name):
         '''
@@ -128,6 +128,7 @@ class ReviewCollector(object):
         for url, info in beer_info.iteritems():
             info['brewery_name'] = brewery_name
             self.get_beer_reviews_concurrently(url, info)
+            print brewery_name, url
 
     def get_beer_reviews_concurrently(self, beer_url, beer_info):
         '''
@@ -142,15 +143,19 @@ class ReviewCollector(object):
         beer_info['weighted_ba_score'] = ba_score
         reviews = reviews_soup.find_all('div', class_='user-comment')
 
-        threads = len(reviews)
+        if reviews:
+            threads = len(reviews)
 
-        jobs = []
-        for i in range(0, threads):
-            thread = threading.Thread(target=self.scrape_beer_review, args=(reviews[i], beer_info))
-            jobs.append(thread)
-            thread.start()
-        for j in jobs:
-            j.join()
+            jobs = []
+            for i in range(0, threads):
+                thread = threading.Thread(target=self.scrape_beer_review,
+                                          args=(reviews[i], beer_info))
+                jobs.append(thread)
+                thread.start()
+            for j in jobs:
+                j.join()
+        else:
+            pass
 
     def scrape_beer_review(self, review, beer_info):
         '''
@@ -173,7 +178,6 @@ class ReviewCollector(object):
             lstfo = {}
             text = None
         self.insert_beer_review(beer_info, ba_score, lstfo, text)
-        time.sleep(0.5)
 
     def insert_beer_review(self, beer_info, ba_score, lstfo, text):
         '''
@@ -190,6 +194,7 @@ class ReviewCollector(object):
         item.update(lstfo)
         item['text'] = text
         coll.insert_one(item)
+        time.sleep(0.25)
 
     def get_brewery_info(self):
         # not using
