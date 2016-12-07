@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import multiprocessing as mp
-import Queue
 import threading
+import time
 
 import requests
 from bs4 import BeautifulSoup
@@ -25,8 +25,6 @@ class ReviewCollector(object):
         self.url = url
         self.soup = None
         self.locations = {}
-        self.places = {}
-        self.breweries = None
 
     def run_parallel(self):
         '''
@@ -37,7 +35,7 @@ class ReviewCollector(object):
 
         coll.remove({})  # be careful with this
         self.locations = {}
-        self.locations['utah'] = 'https://www.beeradvocate.com/place/directory/9/US/ND/'
+        self.locations['utah'] = 'https://www.beeradvocate.com/place/directory/9/US/UT/'
 
         processes = []
         for location, url in self.locations.iteritems():
@@ -94,11 +92,22 @@ class ReviewCollector(object):
         '''
         urls = []
         breweries_soup = self.get_soup(breweries_url)
+        # page_info = breweries_soup.find('table').find_all('tr')
+
         for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
             urls.append(self.base_url.format(tag.find('a')['href']))
             brewery_url = self.base_url.format(tag.find('a')['href'])
             brewery_name = tag.find('a').text
             self.get_list_of_beers(brewery_url, brewery_name)
+
+        # try:
+        #     next_page = page_info[1].find_all('a')[-2]['href']
+        # except:
+        #     next_page = None
+        #
+        # if next_page:
+        #     url = self.base_url.format(next_page)
+        #     self.get_list_of_breweries(url)
 
     def get_list_of_beers(self, brewery_url, brewery_name):
         '''
@@ -116,8 +125,8 @@ class ReviewCollector(object):
             clean = [x.strip() for x in tag.get_text(', ').split(',')]
             beer_info[url] = dict(zip(titles, clean))
 
-        beer_info['brewery_name'] = brewery_name
         for url, info in beer_info.iteritems():
+            info['brewery_name'] = brewery_name
             self.get_beer_reviews_concurrently(url, info)
 
     def get_beer_reviews_concurrently(self, beer_url, beer_info):
@@ -155,10 +164,16 @@ class ReviewCollector(object):
         breakdown = []
         for tag in review.find_all('br')[0]:
             breakdown.append(tag.text)
-        lstfo = {x[0].strip(): x[1].strip() for x in [x.split(":")
-                                                      for x in breakdown[0].split('|')]}
-        text = breakdown[1].split('★'.decode('utf-8'))[0]
+
+        try:
+            lstfo = {x[0].strip(): x[1].strip() for x in [x.split(":")
+                                                          for x in breakdown[0].split('|')]}
+            text = breakdown[1].split('★'.decode('utf-8'))[0]
+        except:
+            lstfo = {}
+            text = None
         self.insert_beer_review(beer_info, ba_score, lstfo, text)
+        time.sleep(0.5)
 
     def insert_beer_review(self, beer_info, ba_score, lstfo, text):
         '''
