@@ -77,9 +77,9 @@ class ReviewCollector(object):
         for tag in breweries_soup.find('table').find_all('tr')[4:-1:2]:
             contacts.append(tag.find('td', class_='hr_bottom_dark').get_text('\n'))
         self.breweries = dict(zip(urls, zip(names, contacts)))
+        # TODO: next page
 
     def get_brewery_info(self):
-
         for brewery_url, brewery_info in self.breweries.iteritems():
             brew_soup = self.get_soup(brewery_url)
             info = []
@@ -89,10 +89,13 @@ class ReviewCollector(object):
                         info.append(float(span.text))
                     except:
                         pass
-            titles = ['beer_avg', 'num_beers', 'num_beer_reviews', 'num_beer_ratings',
-                      'num_place_reviews', 'num_place_ratings', 'place_avg']
-            brew_info = dict(zip(titles, info))
-        return brew_info
+            self.insert_brewery_info(info)
+
+    def insert_brewery_info(self, info):
+        titles = ['beer_avg', 'num_beers', 'num_place_reviews',
+                  'num_place_ratings', 'place_avg']
+        brew_info = dict(zip(titles, info))
+        # insert into breweries collection
 
     def get_beers_and_info(self):
         beer_info = {}
