@@ -68,7 +68,7 @@ class ReviewCollector(object):
         #     self.places[tag.text.split()[0]] = self.base_url.format(tag['href'])
         # breweries_url = self.places['Breweries']
         for tag in soup.find('table').find('table').find_all('a')[:1]:
-            self.get_breweries(self.base_url.format(tag['href']))
+            self.get_list_of_breweries(self.base_url.format(tag['href']))
 
     def get_breweries_urls(self):
         # not using
@@ -80,6 +80,7 @@ class ReviewCollector(object):
         return breweries
 
     def get_breweries(self, breweries_url):
+        # not using
         urls = []
         names = []
         contacts = []
@@ -92,6 +93,24 @@ class ReviewCollector(object):
             contacts.append(tag.find('td', class_='hr_bottom_dark').get_text('\n'))
         self.breweries = dict(zip(urls, zip(names, contacts)))
         # TODO: next page
+
+    def get_list_of_breweries(self, breweries_url):
+        urls = []
+        breweries_soup = self.get_soup(breweries_url)
+        for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
+            urls.append(self.base_url.format(tag.find('a')['href']))
+            brewery_url = self.base_url.format(tag.find('a')['href'])
+            self.get_list_of_beers(brewery_url)
+
+    def get_list_of_beers(self, brewery_url):
+        beers_soup = self.get_soup(brewery_url)
+        beer_info = {}
+        titles = ['beer_name', 'beer_type', 'abv', 'avg_rating', 'num_ratings', 'bros']
+        for tag in beers_soup.find('table').find_all('tr')[3:]:
+            url = self.base_url.format(tag.find('a')['href'])
+            clean = [x.strip() for x in tag.get_text(', ').split(',')]
+            beer_info[url] = dict(zip(titles, clean))
+            self.scrape_beer_review(beer_info)
 
     def get_brewery_info(self):
         for brewery_url, brewery_info in self.breweries.iteritems():
@@ -119,5 +138,13 @@ class ReviewCollector(object):
             clean = [x.strip() for x in tag.get_text(', ').split(',')]
             beer_info[url] = dict(zip(titles, clean))
 
-    def scrape_beer_review(self):
-        pass
+    def scrape_beer_review(self, beer_info):
+        threads = len(beer_info)
+
+        jobs = []
+        for i in range(0, threads):
+            thread = threading.Thread(target=self.scrape_post_details, args=(posts[i], topic))
+            jobs.append(thread)
+            thread.start()
+        for j in jobs:
+            j.join()
