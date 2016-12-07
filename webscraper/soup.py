@@ -30,7 +30,7 @@ class ReviewCollector(object):
 
     def run_parallel(self):
         '''
-        Runs review webscraper
+        Runs review webscraper on multiple processes
         '''
         self.soup = self.get_soup(self.url)
         self.get_location_urls()
@@ -62,12 +62,22 @@ class ReviewCollector(object):
         return soup
 
     def get_location_urls(self):
+        '''
+        Retrieve US location urls
+        '''
         for tag in self.soup.find_all('div', class_='break'):
             for a in tag.find_all('a'):
                 if 'directory' in a['href'] and 'US' in a['href']:
                     self.locations[a.text] = self.base_url.format(a['href'])
 
     def get_places_urls(self, location, location_url):
+        '''
+        Retrieve the places (breweries for now) for the specified location
+
+        INPUT:
+            location (str): name of the location
+            location_url (str): url of the location
+        '''
         soup = self.get_soup(location_url)
         # for tag in soup.find('table').find('table').find_all('a'):
         #     self.places[tag.text.split()[0]] = self.base_url.format(tag['href'])
@@ -76,6 +86,12 @@ class ReviewCollector(object):
             self.get_list_of_breweries(self.base_url.format(tag['href']))
 
     def get_list_of_breweries(self, breweries_url):
+        '''
+        Retrieve a list of breweries
+
+        INPUT:
+            breweries_url (str): url of the breweries at a specific location
+        '''
         urls = []
         breweries_soup = self.get_soup(breweries_url)
         for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
@@ -85,6 +101,13 @@ class ReviewCollector(object):
             self.get_list_of_beers(brewery_url, brewery_name)
 
     def get_list_of_beers(self, brewery_url, brewery_name):
+        '''
+        Retrieve a list of beers from the given brewery
+
+        INPUT:
+            brewery_url (str): url of the brewery
+            brewery_name (str): name of the brewery
+        '''
         beers_soup = self.get_soup(brewery_url)
         beer_info = {}
         titles = ['beer_name', 'beer_style', 'abv', 'avg_rating', 'num_ratings', 'bros']
@@ -95,9 +118,16 @@ class ReviewCollector(object):
 
         beer_info['brewery_name'] = brewery_name
         for url, info in beer_info.iteritems():
-            self.get_beer_reviews(url, info)
+            self.get_beer_reviews_concurrently(url, info)
 
-    def get_beer_reviews(self, beer_url, beer_info):
+    def get_beer_reviews_concurrently(self, beer_url, beer_info):
+        '''
+        Retrieve the beer reviews for the specified beer using multiple threads
+
+        INPUT:
+            beer_url (str): url of the beer
+            beer_info (dict): dictionary of information about the beer
+        '''
         reviews_soup = self.get_soup(beer_url)
         ba_score = reviews_soup.find('div', class_='break').find('span').text
         beer_info['weighted_ba_score'] = ba_score
@@ -114,6 +144,13 @@ class ReviewCollector(object):
             j.join()
 
     def scrape_beer_review(self, review, beer_info):
+        '''
+        Scrape the information from an individual beer review and add it to the database
+
+        INPUT:
+            review (bs4 tag): an individual beer review
+            beer_info (dict): information about the beer
+        '''
         ba_score = float(review.find('span', class_='BAscore_norm').text)
         breakdown = []
         for tag in review.find_all('br')[0]:
@@ -124,13 +161,17 @@ class ReviewCollector(object):
         self.insert_beer_review(beer_info, ba_score, lstfo, text)
 
     def insert_beer_review(self, beer_info, ba_score, lstfo, text):
+        '''
+        Insert the beer review into the collection
+
+        INPUT:
+            beer_info (dict): information about the beer
+            ba_score (float): the individual's weighted score of the beer
+            lstfo (dict): the individual's look, smell, taste, feel, overall scores of the beer
+            text (str): the individual's text review of the beer
+        '''
         item = beer_info.copy()
         item['ba_score'] = ba_score
-        # item['look'] = lstfo[0]
-        # item['smell'] = lstfo[1]
-        # item['taste'] = lstfo[2]
-        # item['feel'] = lstfo[3]
-        # item['overall'] = lstfo[4]
         item.update(lstfo)
         item['text'] = text
         coll.insert_one(item)
@@ -154,15 +195,6 @@ class ReviewCollector(object):
                   'num_place_ratings', 'place_avg']
         brew_info = dict(zip(titles, info))
         # insert into breweries collection
-
-    def get_beers_and_info(self):
-        # not using
-        beer_info = {}
-        titles = ['beer_name', 'beer_type', 'abv', 'avg_rating', 'num_ratings', 'bros']
-        for tag in beers_soup.find('table').find_all('tr')[3:]:
-            url = self.base_url.format(tag.find('a')['href'])
-            clean = [x.strip() for x in tag.get_text(', ').split(',')]
-            beer_info[url] = dict(zip(titles, clean))
 
     def get_breweries_urls(self):
         # not using
