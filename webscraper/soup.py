@@ -35,6 +35,10 @@ class ReviewCollector(object):
         self.soup = self.get_soup(self.url)
         self.get_location_urls()
 
+        coll.remove({})  # be careful with this
+        self.locations = {}
+        self.locations['utah'] = 'https://www.beeradvocate.com/place/directory/9/US/ND/'
+
         processes = []
         for location, url in self.locations.iteritems():
             proc = mp.Process(target=self.get_places_urls,
@@ -71,39 +75,16 @@ class ReviewCollector(object):
         for tag in soup.find('table').find('table').find_all('a')[:1]:
             self.get_list_of_breweries(self.base_url.format(tag['href']))
 
-    def get_breweries_urls(self):
-        # not using
-        breweries = {}
-        breweries_soup = self.get_soup(self.places['Breweries'])
-        for tag in breweries_soup.find('table').find_all('tr')[3:]:
-            if 'profile' in tag.find('a')['href']:
-                breweries[self.base_url.format(tag.find('a')['href'])] = tag.find('a').text
-        return breweries
-
-    def get_breweries(self, breweries_url):
-        # not using
-        urls = []
-        names = []
-        contacts = []
-        print breweries_url
-        breweries_soup = self.get_soup(breweries_url)
-        for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
-            urls.append(self.base_url.format(tag.find('a')['href']))
-            names.append(tag.find('a').text)
-        for tag in breweries_soup.find('table').find_all('tr')[4:-1:2]:
-            contacts.append(tag.find('td', class_='hr_bottom_dark').get_text('\n'))
-        self.breweries = dict(zip(urls, zip(names, contacts)))
-        # TODO: next page
-
     def get_list_of_breweries(self, breweries_url):
         urls = []
         breweries_soup = self.get_soup(breweries_url)
         for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
             urls.append(self.base_url.format(tag.find('a')['href']))
             brewery_url = self.base_url.format(tag.find('a')['href'])
-            self.get_list_of_beers(brewery_url)
+            brewery_name = tag.find('a').text
+            self.get_list_of_beers(brewery_url, brewery_name)
 
-    def get_list_of_beers(self, brewery_url):
+    def get_list_of_beers(self, brewery_url, brewery_name):
         beers_soup = self.get_soup(brewery_url)
         beer_info = {}
         titles = ['beer_name', 'beer_style', 'abv', 'avg_rating', 'num_ratings', 'bros']
@@ -112,6 +93,7 @@ class ReviewCollector(object):
             clean = [x.strip() for x in tag.get_text(', ').split(',')]
             beer_info[url] = dict(zip(titles, clean))
 
+        beer_info['brewery_name'] = brewery_name
         for url, info in beer_info.iteritems():
             self.get_beer_reviews(url, info)
 
@@ -136,18 +118,20 @@ class ReviewCollector(object):
         breakdown = []
         for tag in review.find_all('br')[0]:
             breakdown.append(tag.text)
-        lstfo = [float(x.split(':', 1)[1].strip()) for x in breakdown[0].split('|')]
+        lstfo = {x[0].strip(): x[1].strip() for x in [x.split(":")
+                                                      for x in breakdown[0].split('|')]}
         text = breakdown[1].split('★'.decode('utf-8'))[0]
         self.insert_beer_review(beer_info, ba_score, lstfo, text)
 
     def insert_beer_review(self, beer_info, ba_score, lstfo, text):
         item = beer_info.copy()
         item['ba_score'] = ba_score
-        item['look'] = lstfo[0]
-        item['smell'] = lstfo[1]
-        item['taste'] = lstfo[2]
-        item['feel'] = lstfo[3]
-        item['overall'] = lstfo[4]
+        # item['look'] = lstfo[0]
+        # item['smell'] = lstfo[1]
+        # item['taste'] = lstfo[2]
+        # item['feel'] = lstfo[3]
+        # item['overall'] = lstfo[4]
+        item.update(lstfo)
         item['text'] = text
         coll.insert_one(item)
 
@@ -179,3 +163,27 @@ class ReviewCollector(object):
             url = self.base_url.format(tag.find('a')['href'])
             clean = [x.strip() for x in tag.get_text(', ').split(',')]
             beer_info[url] = dict(zip(titles, clean))
+
+    def get_breweries_urls(self):
+        # not using
+        breweries = {}
+        breweries_soup = self.get_soup(self.places['Breweries'])
+        for tag in breweries_soup.find('table').find_all('tr')[3:]:
+            if 'profile' in tag.find('a')['href']:
+                breweries[self.base_url.format(tag.find('a')['href'])] = tag.find('a').text
+        return breweries
+
+    def get_breweries(self, breweries_url):
+        # not using
+        urls = []
+        names = []
+        contacts = []
+        print breweries_url
+        breweries_soup = self.get_soup(breweries_url)
+        for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
+            urls.append(self.base_url.format(tag.find('a')['href']))
+            names.append(tag.find('a').text)
+        for tag in breweries_soup.find('table').find_all('tr')[4:-1:2]:
+            contacts.append(tag.find('td', class_='hr_bottom_dark').get_text('\n'))
+        self.breweries = dict(zip(urls, zip(names, contacts)))
+        # TODO: next page
