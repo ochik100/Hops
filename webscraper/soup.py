@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import multiprocessing as mp
+import Queue
 import threading
 import time
 
@@ -141,21 +142,28 @@ class ReviewCollector(object):
         reviews_soup = self.get_soup(beer_url)
         ba_score = reviews_soup.find('div', class_='break').find('span').text
         beer_info['weighted_ba_score'] = ba_score
-        reviews = reviews_soup.find_all('div', class_='user-comment')
 
-        if reviews:
-            threads = len(reviews)
+        q = Queue.Queue()
+        q.put(reviews_soup)
 
-            jobs = []
-            for i in range(0, threads):
-                thread = threading.Thread(target=self.scrape_beer_review,
-                                          args=(reviews[i], beer_info))
-                jobs.append(thread)
-                thread.start()
-            for j in jobs:
-                j.join()
-        else:
-            pass
+        while not q.empty():
+            soup = q.get()
+            reviews = soup.find_all('div', class_='user-comment')
+            if reviews:
+                threads = len(reviews)
+
+                jobs = []
+                for i in range(0, threads):
+                    thread = threading.Thread(target=self.scrape_beer_review,
+                                              args=(reviews[i], beer_info))
+                    jobs.append(thread)
+                    thread.start()
+                for j in jobs:
+                    j.join()
+
+                q.task_done()
+            else:
+                pass
 
     def scrape_beer_review(self, review, beer_info):
         '''
