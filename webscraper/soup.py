@@ -34,9 +34,9 @@ class ReviewCollector(object):
         self.soup = self.get_soup(self.url)
         self.get_location_urls()
 
-        coll.remove({})  # be careful with this
-        self.locations = {}
-        self.locations['california'] = 'https://www.beeradvocate.com/place/directory/9/US/CA/'
+        # coll.remove({})  # be careful with this
+        # self.locations = {}
+        # self.locations['california'] = 'https://www.beeradvocate.com/place/directory/9/US/CA/'
 
         processes = []
         for location, url in self.locations.iteritems():
