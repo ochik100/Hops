@@ -177,15 +177,6 @@ class ReviewCollector(object):
                 else:
                     pass
 
-            # try:
-            #     prep = '{}?view=beer&sort=&start={}'
-            #     next_page = prep.format(beer_url, count)
-            #     more_soup = self.get_soup(next_page)
-            #     q.put(more_soup)
-            #     count += 25
-            # except:
-            #     return
-
     def scrape_beer_review(self, review, beer_info):
         '''
         Scrape the information from an individual beer review and add it to the database
@@ -223,47 +214,3 @@ class ReviewCollector(object):
         item['text'] = text
         coll.insert_one(item)
         time.sleep(0.25)
-
-    def get_brewery_info(self):
-        # not using
-        for brewery_url, brewery_info in self.breweries.iteritems():
-            brew_soup = self.get_soup(brewery_url)
-            info = []
-            for tag in brew_soup.find_all('div', class_='break'):
-                for span in tag.find_all('span'):
-                    try:
-                        info.append(float(span.text))
-                    except:
-                        pass
-            self.insert_brewery_info(info)
-
-    def insert_brewery_info(self, info):
-        # not using
-        titles = ['beer_avg', 'num_beers', 'num_place_reviews',
-                  'num_place_ratings', 'place_avg']
-        brew_info = dict(zip(titles, info))
-        # insert into breweries collection
-
-    def get_breweries_urls(self):
-        # not using
-        breweries = {}
-        breweries_soup = self.get_soup(self.places['Breweries'])
-        for tag in breweries_soup.find('table').find_all('tr')[3:]:
-            if 'profile' in tag.find('a')['href']:
-                breweries[self.base_url.format(tag.find('a')['href'])] = tag.find('a').text
-        return breweries
-
-    def get_breweries(self, breweries_url):
-        # not using
-        urls = []
-        names = []
-        contacts = []
-        print breweries_url
-        breweries_soup = self.get_soup(breweries_url)
-        for tag in breweries_soup.find('table').find_all('tr')[3:-1:2]:
-            urls.append(self.base_url.format(tag.find('a')['href']))
-            names.append(tag.find('a').text)
-        for tag in breweries_soup.find('table').find_all('tr')[4:-1:2]:
-            contacts.append(tag.find('td', class_='hr_bottom_dark').get_text('\n'))
-        self.breweries = dict(zip(urls, zip(names, contacts)))
-        # TODO: next page
