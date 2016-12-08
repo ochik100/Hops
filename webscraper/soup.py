@@ -36,7 +36,7 @@ class ReviewCollector(object):
 
         coll.remove({})  # be careful with this
         self.locations = {}
-        self.locations['utah'] = 'https://www.beeradvocate.com/place/directory/9/US/UT/'
+        self.locations['california'] = 'https://www.beeradvocate.com/place/directory/9/US/CA/'
 
         processes = []
         for location, url in self.locations.iteritems():
@@ -146,6 +146,8 @@ class ReviewCollector(object):
         q = Queue.Queue()
         q.put(reviews_soup)
 
+        count = 25
+        first = True
         while not q.empty():
             soup = q.get()
             reviews = soup.find_all('div', class_='user-comment')
@@ -162,8 +164,27 @@ class ReviewCollector(object):
                     j.join()
 
                 q.task_done()
+                first = False
+
+                prep = '{}?view=beer&sort=&start={}'
+                next_page = prep.format(beer_url, count)
+                more_soup = self.get_soup(next_page)
+                q.put(more_soup)
+                count += 25
             else:
-                pass
+                if not first:
+                    return
+                else:
+                    pass
+
+            # try:
+            #     prep = '{}?view=beer&sort=&start={}'
+            #     next_page = prep.format(beer_url, count)
+            #     more_soup = self.get_soup(next_page)
+            #     q.put(more_soup)
+            #     count += 25
+            # except:
+            #     return
 
     def scrape_beer_review(self, review, beer_info):
         '''
@@ -182,10 +203,9 @@ class ReviewCollector(object):
             lstfo = {x[0].strip(): x[1].strip() for x in [x.split(":")
                                                           for x in breakdown[0].split('|')]}
             text = breakdown[1].split('★'.decode('utf-8'))[0]
+            self.insert_beer_review(beer_info, ba_score, lstfo, text)
         except:
-            lstfo = {}
-            text = None
-        self.insert_beer_review(beer_info, ba_score, lstfo, text)
+            pass
 
     def insert_beer_review(self, beer_info, ba_score, lstfo, text):
         '''
