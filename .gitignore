@@ -1,0 +1,5 @@
+# pem files
+*.pem
+
+# compiled files
+*.pyc

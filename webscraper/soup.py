@@ -214,3 +214,7 @@ class ReviewCollector(object):
         item['text'] = text
         coll.insert_one(item)
         time.sleep(0.25)
+
+if __name__ == '__main__':
+    rc = ReviewCollector('https://www.beeradvocate.com/place/')
+    rc.run_parallel()
