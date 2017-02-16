@@ -32,11 +32,11 @@ class ReviewCollector(object):
         Runs review webscraper on multiple processes
         '''
         self.soup = self.get_soup(self.url)
-        self.get_location_urls()
+        # self.get_location_urls()
 
         # coll.remove({})  # be careful with this
-        # self.locations = {}
-        # self.locations['california'] = 'https://www.beeradvocate.com/place/directory/9/US/CA/'
+        self.locations = {}
+        self.locations['Hawaii'] = 'https://www.beeradvocate.com/place/directory/9/US/HI/'
 
         processes = []
         for location, url in self.locations.iteritems():
@@ -82,9 +82,9 @@ class ReviewCollector(object):
         #     self.places[tag.text.split()[0]] = self.base_url.format(tag['href'])
         # breweries_url = self.places['Breweries']
         for tag in soup.find('table').find('table').find_all('a')[:1]:
-            self.get_list_of_breweries(self.base_url.format(tag['href']))
+            self.get_list_of_breweries(self.base_url.format(tag['href']), location)
 
-    def get_list_of_breweries(self, breweries_url):
+    def get_list_of_breweries(self, breweries_url, location):
         '''
         Retrieve a list of breweries
 
@@ -99,7 +99,7 @@ class ReviewCollector(object):
             urls.append(self.base_url.format(tag.find('a')['href']))
             brewery_url = self.base_url.format(tag.find('a')['href'])
             brewery_name = tag.find('a').text
-            self.get_list_of_beers(brewery_url, brewery_name)
+            self.get_list_of_beers(brewery_url, brewery_name, location)
 
         try:
             next_page = page_info[1].find_all('a')[-2]['href']
@@ -108,9 +108,9 @@ class ReviewCollector(object):
 
         if next_page:
             url = self.base_url.format(next_page)
-            self.get_list_of_breweries(url)
+            self.get_list_of_breweries(url, location)
 
-    def get_list_of_beers(self, brewery_url, brewery_name):
+    def get_list_of_beers(self, brewery_url, brewery_name, location):
         '''
         Retrieve a list of beers from the given brewery
 
@@ -128,6 +128,7 @@ class ReviewCollector(object):
 
         for url, info in beer_info.iteritems():
             info['brewery_name'] = brewery_name
+            info['state'] = location
             self.get_beer_reviews_concurrently(url, info)
             print brewery_name, url
 
@@ -212,6 +213,7 @@ class ReviewCollector(object):
         item['ba_score'] = ba_score
         item.update(lstfo)
         item['text'] = text
+        # print item
         coll.insert_one(item)
         time.sleep(0.25)
 
