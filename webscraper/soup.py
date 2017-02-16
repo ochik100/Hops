@@ -32,11 +32,11 @@ class ReviewCollector(object):
         Runs review webscraper on multiple processes
         '''
         self.soup = self.get_soup(self.url)
-        # self.get_location_urls()
+        self.get_location_urls()
 
-        # coll.remove({})  # be careful with this
-        self.locations = {}
-        self.locations['Hawaii'] = 'https://www.beeradvocate.com/place/directory/9/US/HI/'
+        coll.remove({})  # be careful with this
+        # self.locations = {}
+        # self.locations['Hawaii'] = 'https://www.beeradvocate.com/place/directory/9/US/HI/'
 
         processes = []
         for location, url in self.locations.iteritems():
