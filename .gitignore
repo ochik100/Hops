@@ -1,5 +1,9 @@
 # pem files
 *.pem
 
+# data files
+*.json
+*.bson
+
 # compiled files
 *.pyc
