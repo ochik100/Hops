@@ -35,3 +35,4 @@ def convert_collection_to_df(db, collection_name):
 if __name__ == '__main__':
     db = connect_to_database('beer_advocates')
     df = convert_collection_to_df(db, 'reviews')
+    df.to_csv('beers.csv', encoding='utf-8')
