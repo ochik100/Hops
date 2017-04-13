@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from pymongo import MongoClient
 
-DATABASE_NAME = "beer_advocate"
+DATABASE_NAME = "beer_advocates"
 COLLECTION_NAME = "reviews"
 
 client = MongoClient(connect=False)
