@@ -8,7 +8,4 @@
 # compiled files
 *.pyc
 
-# json files
-*.json
-
 *.tmp
