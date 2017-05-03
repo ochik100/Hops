@@ -12,7 +12,8 @@ from settings import APP_STATIC
 def index():
     recommendations = np.load(file=os.path.join(APP_STATIC, 'data/five_most_similar_beers.npy'))
     # print recommendations
-    results = None
+    results = np.array([])
+    beer_name = request.form.get('beer_name')
     if request.method == "POST":
         beer_index = request.form.get('index')
         results = recommendations[beer_index]
@@ -21,7 +22,7 @@ def index():
     # if request.method == "POST":
     #     try:
     #         beer_name = request.form['beer_name']
-    return render_template("index.html", results=results)
+    return render_template("index.html", beer_name=beer_name, results=results)
 
 
 @app.route('/about')

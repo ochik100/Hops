@@ -20,8 +20,10 @@
     </form>
   </div>
   <div class="row">
-    {% if results.any() %}
-      <h2>Recommendations:</h2>
+    {% if results.size > 0 %}
+      {% if beer_name %}
+        <h2>Recommendations for {{ beer_name }}:</h2>
+      {% endif %}
       <br>
       <div id="results">
         <div class="list-group">
