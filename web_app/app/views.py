@@ -1,12 +1,27 @@
-from flask import flash, redirect, render_template
+import os
+
+import numpy as np
+from flask import flash, redirect, render_template, request
 
 from app import app
+from settings import APP_STATIC
 
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 def index():
-    return render_template("index.html")
+    recommendations = np.load(file=os.path.join(APP_STATIC, 'data/five_most_similar_beers.npy'))
+    # print recommendations
+    results = None
+    if request.method == "POST":
+        beer_index = request.form.get('index')
+        results = recommendations[beer_index]
+        print results
+    # results = {}
+    # if request.method == "POST":
+    #     try:
+    #         beer_name = request.form['beer_name']
+    return render_template("index.html", results=results)
 
 
 @app.route('/about')

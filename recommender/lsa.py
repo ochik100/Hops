@@ -3,8 +3,8 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics.pairwise import cosine_similarity
 
 from pyspark.ml.feature import IDF, CountVectorizer, Normalizer
-from pyspark.sql.functions import udf
-from pyspark.sql.types import ArrayType, StringType
+from pyspark.sql.functions import row_number
+from pyspark.sql.window import Window
 
 
 class LatentSemanticAnalysis(object):
@@ -15,6 +15,7 @@ class LatentSemanticAnalysis(object):
         self.tfidf = None
         self.vt = None
         self.similarity_matrix = None
+        self.five_most_similar_beers = None
 
     def term_frequency(self):
         cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf')
@@ -29,8 +30,13 @@ class LatentSemanticAnalysis(object):
         idf = IDF(inputCol='features_normalized', outputCol='features')
         idf_model = idf.fit(self.beer_reviews)
         self.beer_reviews = idf_model.transform(self.beer_reviews)
-        self.tfidf = self.beer_reviews.select(
-            'brewery_name', 'beer_name', 'state', 'beer_style', 'features')
+
+        # add id column to use as an index later
+        self.beer_reviews = self.beer_reviews.withColumn('id', row_number().over(
+            Window.orderBy('beer_style')) - 1)
+
+        self.tfidf = self.beer_reviews.select('id',
+                                              'brewery_name', 'beer_name', 'state', 'beer_style', 'features')
 
         # def get_top_features(features):
         #     return [self.vocabulary[idx] for idx in np.argsort(features.toArray())[::-1][:10]]
@@ -43,16 +49,24 @@ class LatentSemanticAnalysis(object):
         return self.tfidf
 
     def singular_value_decomposition(self, n_components):
+        try:
+            A = np.array([x.features.toArray() for x in self.tfidf.rdd.toLocalIterator()])
+        except:
+            pass
         A = np.array([x.features.toArray() for x in self.tfidf.rdd.toLocalIterator()])
         svd = TruncatedSVD(n_components=n_components)
         svd_model = svd.fit(A)
         self.vt = svd_model.transform(A)
         self.similarity_matrix = cosine_similarity(self.vt)
-        np.save('../data/similarity_matrix.npy', self.similarity_matrix)
+
+        self.five_most_similar_beers = map(
+            lambda x: np.argsort(x)[::-1][1:6], self.similarity_matrix)
+        np.save('../data/five_most_similar_beers.npy', self.five_most_similar_beers)
 
     def transform(self, n_components):
         self.perform_tfidf()
         self.singular_value_decomposition(n_components=n_components)
+
     # def fit(self, df_beer_reviews):
     #     self.beer_reviews = df_beer_reviews
     #
