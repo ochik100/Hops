@@ -1,16 +1,42 @@
 {% extends "hops_base.html" %}
 
+{% block head %}
+{{ super() }}
+{% endblock %}
+
 {% block content %}
 <h1>Welcome to Hops: A Beer Recommender!</h1>
-<form class="navbar-form navbar-left" role="search">
-  <div id="the-basics" class="form-group">
-    <input type="text" class="typeahead" placeholder="Beer Name">
+<form class="navbar-form navbar-left">
+  <div class="form-group">
+    <input id="test" type="text" class="typeahead" placeholder="Beer Name">
   </div>
   <button type="submit" class="btn btn-default">Search</button>
 </form>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{url_for('.static', filename='js/the-basics.js')}}"></script>
-{{super()}}
+<script>
+  $(function() {
+      function displayResult(item) {
+          $('.alert').show().html('You selected <strong>' + item.value + '</strong>: <strong>' + item.text + '</strong>');
+      }
+      $('#test').typeahead({
+          source: [
+              {id: 1, name: 'Toronto'},
+              {id: 2, name: 'Montreal'},
+              {id: 3, name: 'New York'},
+              {id: 4, name: 'Buffalo'},
+              {id: 5, name: 'Boston'},
+              {id: 6, name: 'Columbus'},
+              {id: 7, name: 'Dallas'},
+              {id: 8, name: 'Vancouver'},
+              {id: 9, name: 'Seattle'},
+              {id: 10, name: 'Los Angeles'}
+          ],
+          onSelect: displayResult
+      });
+
+
+  });
+</script>
 {% endblock %}
