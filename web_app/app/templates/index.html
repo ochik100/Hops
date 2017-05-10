@@ -20,7 +20,7 @@
     </form>
   </div>
   <div class="row">
-    {% if results.size > 0 %}
+    {% if results|length > 0 %}
       {% if beer_name %}
         <h2>Recommendations for {{ beer_name }}:</h2>
       {% endif %}
@@ -29,8 +29,8 @@
         <div class="list-group">
           {% for result in results %}
             <a class="list-group-item">
-              <h4 id='beer' class="list-group-item-heading">{{ result }}</h4>
-              <p class="list-group-item-text">{{ result }}</p>
+              <h4 id='beer' class="list-group-item-heading">{{ result[0] }}</h4>
+              <p class="list-group-item-text">{{ result[1] }}</p>
             </a>
           {% endfor %}
         </div>
@@ -43,42 +43,68 @@
 {% block scripts %}
 <script>
 
-$(document).ready(function($) {
-  function getStuff() {
-    return ['Valor Ale',
-     "Charlie's Cherry - Cheery Chamomile Blonde Bombshell",
-     'Abunai.P.A.',
-     'Random Red Rye',
-     'Heroine India Pale Ale',
-     '8-Bit IPA!',
-     'The Rock IPA',
-     "Bosco's Revenge",
-     'Cashmere Hammer',
-     'Farm House',
-     'Two Headed Unicorn',
-     'Mystery Barrel Sour 1.0',
-     "Monks' Dubbel Ale",
-     'Manly Barley Wine Ale',
-     'Harvest Ale',
-     'Black Gold',
-     'Red Bean And Rice Ale',
-     'Sweet Vanilla Oatmeal Stout',
-     'Koko Beware',
-     'Dark Saison'];
-  }
-  function getIndex(item) {
-      var idx = typeaheadSource.indexOf(item)
-      return idx
-  }
-  function displayResult(item) {
+  var typeaheadSource = ['Valor Ale',
+   "Charlie's Cherry - Cheery Chamomile Blonde Bombshell",
+   'Abunai.P.A.',
+   'Random Red Rye',
+   'Heroine India Pale Ale',
+   '8-Bit IPA!',
+   'The Rock IPA',
+   "Bosco's Revenge",
+   'Cashmere Hammer',
+   'Farm House',
+   'Two Headed Unicorn',
+   'Mystery Barrel Sour 1.0',
+   "Monks' Dubbel Ale",
+   'Manly Barley Wine Ale',
+   'Harvest Ale',
+   'Black Gold',
+   'Red Bean And Rice Ale',
+   'Sweet Vanilla Oatmeal Stout',
+   'Koko Beware',
+   'Dark Saison'];
+  // var typeaheadSource = [{
+  //          id: 1, firstName: 'John'}, {
+  //          id: 2, firstName: 'Alex'}, {
+  //          id: 3, firstName: 'Terry'
+  //     }];
+  //
+  // var products = [
+  //           {
+  //               id: 0,
+  //               name: "Deluxe Bicycle",
+  //               price: 499.98
+  //           },
+  //           {
+  //               id: 1,
+  //               name: "Super Deluxe Trampoline",
+  //               price: 134.99
+  //           },
+  //           {
+  //               id: 2,
+  //               name: "Super Duper Scooter",
+  //               price: 49.95
+  //           }
+  //       ];
 
-      document.getElementById("index").value = typeaheadSource.indexOf(item.text)
+  $(document).ready(function($) {
+    function getIndex(item) {
+        var idx = typeaheadSource.indexOf(item)
+        return idx
+    }
+    function displayResult(item) {
 
-      $('.alert').show().html( typeaheadSource.indexOf(item.text) + ", " + document.getElementById("index").value);
-  }
-  $('#test').typeahead({
-  	source: getStuff()
-  });
-});
+        document.getElementById("index").value = typeaheadSource.indexOf(item.text)
+
+        $('.alert').show().html( typeaheadSource.indexOf(item.text) + ", " + document.getElementById("index").value);
+    }
+    function getStuff() {
+                return typeaheadSource
+            }
+    $('#test').typeahead({
+      source: typeaheadSource,
+      onSelect: displayResult
+    });
+  })
 </script>
 {% endblock %}

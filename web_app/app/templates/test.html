@@ -1,71 +1,50 @@
-{% extends "hops_base.html" %}
-{% block head %}
-{{ super() }}
-{% endblock %}
-
-{% block content %}
-<div class="row">
-    <div class="alert alert-block alert-success"></div>
-</div>
-<div class="row">
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs">
-        <li class="active"><a href="#tab-demo1" data-toggle="tab">Demo #1</a></li>
-    </ul>
-    <!-- Tab panes -->
-    <div class="tab-content">
-        <div class="tab-pane active" id="tab-demo1">
-            <h3>Demo #1</h3>
-            <div class="well col-md-5">
-                <input id="test" type="text" class="col-md-12 form-control" placeholder="Search cities..." autocomplete="off" />
-            </div>
-            <div class="col-md-7">
-                <pre class="prettyprint">
-
-$('#demo1').typeahead({
-source: [
-    { id: 1, name: 'Toronto' },
-    { id: 2, name: 'Montreal' },
-    { id: 3, name: 'New York' },
-    { id: 4, name: 'Buffalo' },
-    { id: 5, name: 'Boston' },
-    { id: 6, name: 'Columbus' },
-    { id: 7, name: 'Dallas' },
-    { id: 8, name: 'Vancouver' },
-    { id: 9, name: 'Seattle' },
-    { id: 10, name: 'Los Angeles' }
-]
-});
-                </pre>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
+<input type="text" id="example" />
 <script>
-    $(function() {
-        function displayResult(item) {
-            $('.alert').show().html('You selected <strong>' + item.value + '</strong>: <strong>' + item.text + '</strong>');
-        }
-        $('#test').typeahead({
-            source: [
-                {id: 1, name: 'Toronto'},
-                {id: 2, name: 'Montreal'},
-                {id: 3, name: 'New York'},
-                {id: 4, name: 'Buffalo'},
-                {id: 5, name: 'Boston'},
-                {id: 6, name: 'Columbus'},
-                {id: 7, name: 'Dallas'},
-                {id: 8, name: 'Vancouver'},
-                {id: 9, name: 'Seattle'},
-                {id: 10, name: 'Los Angeles'}
-            ],
-            onSelect: displayResult
-        });
+  var json = [
+    {
+      "id": 1,
+      "value": "Andrew Pougher",
+      "label": "X"
+    },
+    {
+      "id": 2,
+      "value": "Michele Moore",
+      "label": "Y"
+    },
+    {
+      "id": 3,
+      "value": "Sandy Petersen",
+      "label": "Z"
+    },
+    {
+      "id": 4,
+      "value": "Michael Moore",
+      "label": "Q"
+    },
+    {
+      "id": 5,
+      "value": "Barack Obama",
+      "label": "M"
+    }
+  ]
 
-
-    });
+  $('#example').typeahead( {
+  	source: json,
+    matcher: function(item) {
+     	for (var attr in item) {
+    		if (~item[attr].toString().toLowerCase().indexOf(this.query.toLowerCase()))	return true
+      }
+      return false
+    },
+    displayText: function(item) {
+      return JSON.stringify(item)
+    },
+    highlighter: function(item) {
+      item = JSON.parse(item)
+      return '<span><h4>'+item.value + '</h4>' + item.id  + ' ' + item.label +'</span>'
+  	},
+    afterSelect: function(item) {
+      this.$element[0].value = item.value
+  	}
+  })
 </script>
-{% endblock %}
