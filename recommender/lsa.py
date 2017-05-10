@@ -74,7 +74,9 @@ class LatentSemanticAnalysis(object):
         for x in self.tfidf.rdd.toLocalIterator():
             data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style,
                     'first': x.first, 'second': x.second, 'third': x.third, 'fourth': x.fourth, 'fifth': x.fifth}
+            name = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name}
             db.child('beers').child(x.id).set(data, token)
+            db.child('beer_names').child(x.id).set(name, token)
         # np.save('../data/five_most_similar_beers.npy', self.five_most_similar_beers)
 
     def save_to_firebase(self):
