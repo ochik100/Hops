@@ -22,6 +22,6 @@ if __name__ == '__main__':
     df_beer_reviews = get_beer_reviews_dataframe(df_reviews)
     print "df_beer_reviews"
 
-    lsa_ = LatentSemanticAnalysis(df_beer_reviews)
+    lsa_ = LatentSemanticAnalysis(df_beer_reviews, sql_context)
     lsa_.transform(n_components=20)
     # sc.stop()

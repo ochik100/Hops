@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics.pairwise import cosine_similarity
 
+import database
 from pyspark.ml.feature import IDF, CountVectorizer, Normalizer
 from pyspark.sql.functions import row_number
 from pyspark.sql.window import Window
@@ -9,7 +10,8 @@ from pyspark.sql.window import Window
 
 class LatentSemanticAnalysis(object):
 
-    def __init__(self, df_beer_reviews):
+    def __init__(self, df_beer_reviews, sql_context):
+        self.sql_context = sql_context
         self.beer_reviews = df_beer_reviews
         self.vocabulary = None
         self.tfidf = None
@@ -59,9 +61,24 @@ class LatentSemanticAnalysis(object):
         self.vt = svd_model.transform(A)
         self.similarity_matrix = cosine_similarity(self.vt)
 
-        self.five_most_similar_beers = map(
-            lambda x: np.argsort(x)[::-1][1:6], self.similarity_matrix)
-        np.save('../data/five_most_similar_beers.npy', self.five_most_similar_beers)
+        # self.five_most_similar_beers = map(
+        # lambda x: np.argsort(x)[::-1][:6], self.similarity_matrix)
+
+        self.five_most_similar_beers = self.sql_context.createDataFrame(map(lambda x: np.argsort(
+            x)[::-1][:6].tolist(), self.similarity_matrix), ['id', 'first', 'second', 'third', 'fourth', 'fifth'])
+
+        self.tfidf = self.tfidf.join(self.five_most_similar_beers, ['id'], 'inner')
+
+        token, db = database.connect_to_database()
+
+        for x in self.tfidf.rdd.toLocalIterator():
+            data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style,
+                    'first': x.first, 'second': x.second, 'third': x.third, 'fourth': x.fourth, 'fifth': x.fifth}
+            db.child('beers').child(x.id).set(data, token)
+        # np.save('../data/five_most_similar_beers.npy', self.five_most_similar_beers)
+
+    def save_to_firebase(self):
+        pass
 
     def transform(self, n_components):
         self.perform_tfidf()
