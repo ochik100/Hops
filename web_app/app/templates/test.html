@@ -1,50 +1,59 @@
-<input type="text" id="example" />
-<script>
-  var json = [
-    {
-      "id": 1,
-      "value": "Andrew Pougher",
-      "label": "X"
-    },
-    {
-      "id": 2,
-      "value": "Michele Moore",
-      "label": "Y"
-    },
-    {
-      "id": 3,
-      "value": "Sandy Petersen",
-      "label": "Z"
-    },
-    {
-      "id": 4,
-      "value": "Michael Moore",
-      "label": "Q"
-    },
-    {
-      "id": 5,
-      "value": "Barack Obama",
-      "label": "M"
-    }
-  ]
+{% extends "hops_base.html" %}
 
-  $('#example').typeahead( {
-  	source: json,
-    matcher: function(item) {
-     	for (var attr in item) {
-    		if (~item[attr].toString().toLowerCase().indexOf(this.query.toLowerCase()))	return true
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+      <div name = "al" class="alert alert-block alert-success"></div>
+  </div>
+  <div class="row">
+    <h1>Hops: A Beer Recommender!</h1>
+    <form action="/" class="navbar-form navbar-left" method="POST">
+      <div class="form-group">
+        <input id="test" name="beer_name" type="text" class="typeahead" placeholder="Enter a Beer Name" size=80>
+        <input id="index" type="hidden" name="index" value="">
+      </div>
+      <button type="submit" class="btn btn-default">Search</button>
+    </form>
+  </div>
+  {% endblock %}
+
+  {% block scripts %}
+  <script>
+    // var typeaheadSource = [{
+    //          id: 1, firstName: 'John'}, {
+    //          id: 2, firstName: 'Alex'}, {
+    //          id: 3, firstName: 'Terry'
+    //     }];
+    var products = [
+      {"id": 0, "name": "Deluxe Bicycle", "price": 499.98},
+      {"id": 1, "name": "Super Deluxe Trampoline", "price": 134.99},
+      {"id": 2,"name": "Super Duper Scooter","price": 49.95}
+    ];
+
+    var dataSource = new Bloodhound({
+        datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name', 'price'),
+        queryTokenizer: Bloodhound.tokenizers.whitespace,
+        local: products
+
+    });
+
+    dataSource.initialize();
+
+    $('#test').typeahead({
+        minLength: 0,
+        highlight: true
+    }, {
+      source: dataSource,
+      display: function(item) {
+        return item.name + '-' + item.price
+      },
+      suggestion: function (data) {
+          return '<div>' +data.name  + '–' + data.price + '</div>'
       }
-      return false
-    },
-    displayText: function(item) {
-      return JSON.stringify(item)
-    },
-    highlighter: function(item) {
-      item = JSON.parse(item)
-      return '<span><h4>'+item.value + '</h4>' + item.id  + ' ' + item.label +'</span>'
-  	},
-    afterSelect: function(item) {
-      this.$element[0].value = item.value
-  	}
-  })
-</script>
+    });
+  </script>
+  {% endblock %}

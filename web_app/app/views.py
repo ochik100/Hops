@@ -7,18 +7,21 @@ from app import app
 from firebase_connection import connect_to_database
 from settings import APP_STATIC
 
+token, db = connect_to_database()
+
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 def index():
-    token, db = connect_to_database()
-    recommendations = np.load(file=os.path.join(APP_STATIC, 'data/five_most_similar_beers.npy'))
+
+    # recommendations = np.load(file=os.path.join(APP_STATIC, 'data/five_most_similar_beers.npy'))
     # print recommendations
     results = []
-    beer_name = request.form.get('beer_name')
+    beer_name = ""
     if request.method == "POST":
         beer_index = request.form.get('index')
         beer = db.child('beers').child(beer_index).get(token).val()
+        beer_name = [beer['beer_name'], beer['brewery_name']]
         indexes = np.array([beer['first'], beer['second'], beer[
                            'third'], beer['fourth'], beer['fifth']])
         for idx in indexes:
