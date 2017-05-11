@@ -20,7 +20,8 @@ class LatentSemanticAnalysis(object):
         self.five_most_similar_beers = None
 
     def term_frequency(self):
-        cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf')
+        # TODO: save vocabulary to firebase
+        cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf', vocabSize=10000)
         cv_model = cv.fit(self.beer_reviews)
         self.beer_reviews = cv_model.transform(self.beer_reviews)
         self.vocabulary = cv_model.vocabulary
