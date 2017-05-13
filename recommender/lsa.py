@@ -1,13 +1,9 @@
 import numpy as np
-from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import LabelEncoder
 
 import database
 from pyspark.ml.feature import IDF, CountVectorizer, Normalizer
 from pyspark.mllib.linalg.distributed import RowMatrix
-from pyspark.sql.functions import row_number
-from pyspark.sql.window import Window
 from singular_value_decomposition import computeSVD
 
 
@@ -22,6 +18,8 @@ class LatentSemanticAnalysis(object):
         self.vt = None
         self.similarity_matrix = None
         self.five_most_similar_beers = None
+        self.token = None
+        self.db = None
 
     def term_frequency(self):
         # TODO: save vocabulary to firebase
@@ -38,21 +36,11 @@ class LatentSemanticAnalysis(object):
         idf_model = idf.fit(self.beer_reviews)
         self.beer_reviews = idf_model.transform(self.beer_reviews)
 
-        # add id column to use as an index later
-        # self.beer_reviews = self.beer_reviews.withColumn('id', row_number().over(
-        #     Window.orderBy('beer_style')) - 1)
-        # print self.beer_reviews.columns
-        # self.beer_reviews = self.beer_reviews.withColumn('id', LabelEncoder().fit_transform(''))
-
         self.tfidf = self.beer_reviews.select(
             'brewery_name', 'beer_name', 'state', 'beer_style', 'features')
 
-        # num_partitions = self.tfidf.rdd.getNumPartitions()
-        # index = self.spark_context.parallelize(range(0, self.tfidf.rdd.count()), num_partitions)
         self.tfidf = self.tfidf.rdd.zipWithIndex().map(lambda (y, id_): [y[0], y[1], y[2], y[3], y[4], id_]).toDF(
             ['brewery_name', 'beer_name', 'state', 'beer_style', 'features', 'id'])
-        # self.tfidf = index.zip(self.tfidf.rdd).map(lambda (x, y): [x, y[0], y[1], y[2], y[3], y[4]]).toDF(
-        #     ['id', 'brewery_name', 'beer_name', 'state', 'beer_style', 'features'])
 
         # def get_top_features(x):
         #     idxs = np.argsort(x.features.toArray())[::-1][:5].tolist()
@@ -97,18 +85,25 @@ class LatentSemanticAnalysis(object):
         #     , 'attr1': x.attr1, 'attr2': x.attr2, 'attr3': x.attr3, 'attr4': x.attr4, 'attr5': x.attr5
         #
 
-        token, db = database.connect_to_database()
+        self.token, self.db = database.connect_to_database()
 
-        for x in self.tfidf.rdd.toLocalIterator():
+        # use default arguments to avvoid closure of the environment of the token and db variables
+        def save_to_firebase(x, token=self.token, db=self.db):
             data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style,
                     'first': x.first, 'second': x.second, 'third': x.third, 'fourth': x.fourth, 'fifth': x.fifth}
             name = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name}
             db.child('beers').child(x.id).set(data, token)
             db.child('beer_names').child(x.id).set(name, token)
-        # np.save('../data/five_most_similar_beers.npy', self.five_most_similar_beers)
 
-    def save_to_firebase(self):
-        pass
+        self.tfidf.rdd.foreach(lambda x: save_to_firebase(x))
+
+        # for x in self.tfidf.rdd.toLocalIterator():
+        #     data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style,
+        #             'first': x.first, 'second': x.second, 'third': x.third, 'fourth': x.fourth, 'fifth': x.fifth}
+        #     name = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name}
+        #     db.child('beers').child(x.id).set(data, token)
+        #     db.child('beer_names').child(x.id).set(name, token)
+        # np.save('../data/five_most_similar_beers.npy', self.five_most_similar_beers)
 
     def transform(self, n_components):
         self.perform_tfidf()
