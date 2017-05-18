@@ -10,7 +10,7 @@ if __name__ == '__main__':
     print "Just created a SparkContext"
     sql_context = ps.SQLContext(sc)
     print "Just created a SQLContext"
-    df = sql_context.read.json('../data/reviews_h.json')
+    df = sql_context.read.json('../data/reviews.json')
     print "df"
     df_reviews = df.select('brewery_name', 'beer_name', 'state', 'beer_style', 'text')
     print "df_reviews"
@@ -23,5 +23,5 @@ if __name__ == '__main__':
     print "df_beer_reviews"
 
     lsa_ = LatentSemanticAnalysis(sc, sql_context, df_beer_reviews)
-    lsa_.transform(n_components=250)
+    lsa_.transform(n_components=500)
     # sc.stop()
