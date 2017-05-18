@@ -1,34 +1,3 @@
-{% extends "hops_base.html" %}
-
-{% block head %}
-{{ super() }}
-{% endblock %}
-
-{% block content %}
-<div class="container">
-  <div class="row">
-    {% if results|length > 0 %}
-      {% if beer_name %}
-        <h2>Top 5 Beers Similar to {{ beer_name[0] }} by {{ beer_name[1] }}</h2>
-      {% endif %}
-      <br>
-      <div id="results">
-        <div class="list-group">
-          {% for result in results %}
-            <a class="list-group-item">
-              <h4 id='beer' class="list-group-item-heading">{{ result[0] }}</h4>
-              <p class="list-group-item-text">{{ result[1] }}</p>
-            </a>
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
-  </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
 var typeaheadSource = ['ALTitude Altbier - Altitude Chophouse & Brewery',
  'Road Warrior Red - 10-56 Brewing Company',
  'Valor Ale - 14th Star Brewing Co.',
@@ -222,12 +191,11 @@ $(document).ready(function($) {
 
       $('.alert').show().html( typeaheadSource.indexOf(item.text) + ", " + document.getElementById("index").value);
   }
+  function getStuff() {
+              return typeaheadSource
+          }
   $('#test').typeahead({
     source: typeaheadSource,
     onSelect: displayResult
   });
-
-
 })
-</script>
-{% endblock %}

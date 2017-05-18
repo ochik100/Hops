@@ -10,8 +10,7 @@ from settings import APP_STATIC
 token, db = connect_to_database()
 
 
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/index', methods=['GET', 'POST'])
+@app.route('/results', methods=['GET', 'POST'])
 def index():
 
     # recommendations = np.load(file=os.path.join(APP_STATIC, 'data/five_most_similar_beers.npy'))
@@ -26,12 +25,16 @@ def index():
                            'third'], beer['fourth'], beer['fifth']])
         for idx in indexes:
             details = db.child('beer_names').child(idx).get(token).val()
-            output = (details['beer_name'].encode('ascii'),
-                      details['brewery_name'].encode('ascii'))
-            print output
+            output = (details['beer_name'].encode('utf-8'),
+                      details['brewery_name'].encode('utf-8'))
             results.append(output)
-    print results
     return render_template("index.html", beer_name=beer_name, results=results)
+
+
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    return render_template("search.html")
 
 
 @app.route('/about')

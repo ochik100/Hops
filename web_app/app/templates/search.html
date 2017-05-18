@@ -1,0 +1,98 @@
+{% extends "hops_base.html" %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+      <div name = "al" class="alert alert-block alert-success"></div>
+  </div>
+  <div class="row">
+    <h1>Hops: A Beer Recommender!</h1>
+    <form action="/results" class="navbar-form navbar-left" method="POST">
+      <div class="form-group">
+        <input id="test" name="beer_name" type="text" class="typeahead" data-provider="typeahead" placeholder="Enter a Beer Name" size=80>
+        <input id="index" type="hidden" name="index" value="">
+      </div>
+      <button type="submit" class="btn btn-default">Search</button>
+    </form>
+  </div>
+  <div class="row">
+    {% if results|length > 0 %}
+      {% if beer_name %}
+        <h2>Top 5 Beers Similar to {{ beer_name[0] }} by {{ beer_name[1] }}</h2>
+      {% endif %}
+      <br>
+      <div id="results">
+        <div class="list-group">
+          {% for result in results %}
+            <a class="list-group-item">
+              <h4 id='beer' class="list-group-item-heading">{{ result[0] }}</h4>
+              <p class="list-group-item-text">{{ result[1] }}</p>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://www.gstatic.com/firebasejs/4.0.0/firebase.js"></script>
+<script>
+// Initialize Firebase
+
+firebase.initializeApp(config);
+
+var admin = firebase.auth().signInAnonymously();
+
+var database = firebase.database();
+
+$(document).ready(function ($) {
+  function work(keys, dataSource) {
+    $('.alert').show().html(dataSource);
+    $("#test").typeahead({
+      source: dataSource,
+      onSelect: function displayResult(item) {
+        document.getElementById("index").value = keys[dataSource.indexOf(item.text)];
+      }
+    });
+    $("#test").focus();
+  }
+  function dynamicDataSource(query) {
+    var keys = [];
+    var results = [];
+    var ref = database.ref('beer_names');
+    ref.orderByChild("beer_name").startAt(query).limitToFirst(5).on("child_added", function (snapshot){
+      var value = snapshot.val();
+      console.log(value);
+      keys.push(snapshot.key);
+      results.push(value['beer_name'] + ' - ' + value['brewery_name']);
+    });
+    ref.orderByChild("brewery_name").startAt(query).limitToFirst(5).on("child_added", function (snapshot){
+      var value = snapshot.val();
+      console.log(value);
+      keys.push(snapshot.key);
+      results.push(value['beer_name'] + ' - ' + value['brewery_name']);
+    });
+    return [keys, results];
+    // return [[5, 4],['please', 'work']]
+  }
+  $("input#test").keyup( function() {
+    if(this.value.length > 2) {
+      // $('.alert').show().html(this.value);
+      var source = dynamicDataSource(this.value);
+      var keys = source[0];
+      var dataSource = source[1];
+      // $('.alert').show().html(dataSource[0]);
+      work(keys, dataSource);
+    } else {
+      // $('.alert').show().html((database === null).toString());
+    }
+  })
+})
+</script>
+{% endblock %}
