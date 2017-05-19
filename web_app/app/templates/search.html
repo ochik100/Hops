@@ -13,7 +13,7 @@
     <h1>Hops: A Beer Recommender!</h1>
     <form action="/results" class="navbar-form navbar-left" method="POST">
       <div class="form-group">
-        <input id="test" name="beer_name" type="text" class="typeahead" data-provider="typeahead" placeholder="Enter a Beer Name" size=80>
+        <input id="test" name="beer_name" type="text" class="typeahead" data-provider="typeahead" placeholder="Enter a Beer or Brewery Name" size=80>
         <input id="index" type="hidden" name="index" value="">
       </div>
       <button type="submit" class="btn btn-default">Search</button>
@@ -79,7 +79,6 @@ $(document).ready(function ($) {
       results.push(value['beer_name'] + ' - ' + value['brewery_name']);
     });
     return [keys, results];
-    // return [[5, 4],['please', 'work']]
   }
   $("input#test").keyup( function() {
     if(this.value.length > 2) {

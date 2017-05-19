@@ -19,6 +19,7 @@ def index():
     beer_name = ""
     if request.method == "POST":
         beer_index = request.form.get('index')
+        print "BEER INDEX - ", beer_index
         beer = db.child('beers').child(beer_index).get(token).val()
         beer_name = [beer['beer_name'], beer['brewery_name']]
         indexes = np.array([beer['first'], beer['second'], beer[

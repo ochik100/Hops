@@ -59,9 +59,24 @@ class LatentSemanticAnalysis(object):
         self.inverse_document_frequency()
         return self.tfidf
 
+    def rdd_transpose(self, rdd):
+        rddT1 = rdd.zipWithIndex().flatMap(lambda (x, i): [(i, j, e) for (j, e) in enumerate(x)])
+        rddT2 = rddT1.map(lambda (i, j, e): (j, (i, e))).groupByKey().sortByKey()
+        rddT3 = rddT2.map(lambda (i, x): sorted(
+            list(x), cmp=lambda (i1, e1), (i2, e2): cmp(i1, i2)))
+        rddT4 = rddT3.map(lambda x: map(lambda (i, y): y, x))
+        return rddT4.map(lambda x: np.asarray(x))
+
     def singular_value_decomposition(self, n_components):
-        mat = RowMatrix(self.spark_context.parallelize(np.asarray(self.tfidf.select(
-            'id', 'features').rdd.map(lambda row: row[1].toArray()).collect()).T))
+        # mat = RowMatrix(self.spark_context.parallelize(np.asarray(self.tfidf.select(
+        #     'id', 'features').rdd.map(lambda row: row[1].toArray()).collect()).T))
+
+        rdd = self.tfidf.select('id', 'features').rdd.map(lambda row: row[1].toArray())
+        mat = RowMatrix(self.rdd_transpose(rdd))
+
+        # rdd_ = self.tfidf.select(
+        #     'id', 'features').rdd
+        # rdd_ = rdd_.map(lambda row: row[1].toArray())
         svd = computeSVD(mat, n_components)
         self.similarity_matrix = cosine_similarity(svd.V.toArray())
         # try:
