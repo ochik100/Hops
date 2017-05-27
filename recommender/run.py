@@ -10,7 +10,7 @@ if __name__ == '__main__':
     print "Just created a SparkContext"
     sql_context = ps.SQLContext(sc)
     print "Just created a SQLContext"
-    df = sql_context.read.json('../data/reviews_some.json')
+    df = sql_context.read.json('../data/reviewsm.json')
     print "df"
     df_reviews = df.select('brewery_name', 'beer_name', 'state', 'beer_style', 'avg_rating', 'text')
     print "df_reviews"
