@@ -6,7 +6,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
-from pyspark.sql.functions import collect_list, udf
+from pyspark.sql.functions import avg, col, collect_list, count, udf
 from pyspark.sql.types import ArrayType, StringType
 
 
@@ -53,8 +53,8 @@ def group_tokens_by_beer(df_tokens):
     get_all_tokens_udf = udf(get_all_tokens, ArrayType(StringType()))
 
     df_beer_reviews = df_tokens.groupby('brewery_name', 'beer_name', 'state', 'beer_style') \
-        .agg(get_all_tokens_udf(collect_list('tokens'))
-             .alias('lemmatized_tokens'))
+        .agg(get_all_tokens_udf(collect_list('tokens')).alias('lemmatized_tokens'), count("*").alias("count"), avg("avg_rating").alias("avg")) \
+        .where((col("count") > 25) & (col("avg") >= 3.5))
 
     return df_beer_reviews
 

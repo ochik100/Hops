@@ -1,9 +1,14 @@
+from time import sleep
+
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 import database
 from pyspark.ml.feature import IDF, CountVectorizer, Normalizer
 from pyspark.mllib.linalg.distributed import RowMatrix
+from pyspark.sql import Row
+from pyspark.sql.functions import col, udf
+from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 from singular_value_decomposition import computeSVD
 
 
@@ -26,7 +31,7 @@ class LatentSemanticAnalysis(object):
         cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf', vocabSize=2500)
         cv_model = cv.fit(self.beer_reviews)
         self.beer_reviews = cv_model.transform(self.beer_reviews)
-        self.vocabulary = {idx: val for idx, val in enumerate(cv_model.vocabulary)}
+        self.vocabulary = {idx: val.encode('utf-8') for idx, val in enumerate(cv_model.vocabulary)}
 
         normalizer = Normalizer(inputCol='features_tf', outputCol='features_normalized')
         self.beer_reviews = normalizer.transform(self.beer_reviews)
@@ -42,17 +47,33 @@ class LatentSemanticAnalysis(object):
         self.tfidf = self.tfidf.rdd.zipWithIndex().map(lambda (y, id_): [y[0], y[1], y[2], y[3], y[4], id_]).toDF(
             ['brewery_name', 'beer_name', 'state', 'beer_style', 'features', 'id'])
 
-        # def get_top_features(x):
-        #     idxs = np.argsort(x.features.toArray())[::-1][:5].tolist()
-        #     return [x.id] + [self.vocabulary[idx] for idx in idxs]
-        #
-        # df_features = self.sql_context.createDataFrame(self.tfidf.rdd.map(
-        #     lambda x: get_top_features(x)).collect(), ['id', 'attr1', 'attr2', 'attr3', 'attr4', 'attr5'])
-        # self.tfidf = self.tfidf.join(df_features, ['id'], 'inner')
-        # def get_top_features(features):
-        #     return [self.vocabulary[idx] for idx in np.argsort(features.toArray())[::-1][:10]]
-        # top_features_udf = udf(lambda beer: get_top_features(beer), ArrayType(StringType()))
-        # self.tfidf = self.tfidf.withColumn('top_features', top_features_udf('features'))
+        print self.tfidf.columns
+        schema = StructType([StructField("id", IntegerType(), True),
+                             StructField("top_features", StringType(), True)])
+
+        def get_top_features(x):
+            # idxs = np.argsort(x.features.toArray())[::-1][:7].tolist()
+            return [x.id] + np.argsort(x.features.toArray())[::-1][:7].tolist()
+            # return [x.id] + [",".join(map(lambda idx: self.vocabulary[idx], idxs))]
+
+        # rdd_ = self.tfidf.rdd.map(
+            # lambda x: [x.id] + np.argsort(x.features.toArray())[::-1][:7].tolist())
+        rdd_ = self.tfidf.rdd.map(lambda x: get_top_features(x))
+        df_features = self.sql_context.createDataFrame(
+            rdd_, ['id', 'top1', 'top2', 'top3', 'top4', 'top5', 'top6', 'top7'])
+
+        self.tfidf = self.tfidf.join(df_features, ['id'], 'inner')
+        broadcastVocab = self.spark_context.broadcast(self.vocabulary)
+
+        def lookup(x):
+            if broadcastVocab.value.get(x) is None:
+                return ""
+            else:
+                return broadcastVocab.value.get(x)
+        lookup_udf = udf(lookup)
+        cols = [x for x in self.tfidf.columns if "top" in x]
+        self.tfidf = self.tfidf.select(*(lookup_udf(col(c)).alias(c)
+                                         if c in cols else c for c in self.tfidf.columns))
 
     def perform_tfidf(self):
         self.term_frequency()
@@ -77,7 +98,9 @@ class LatentSemanticAnalysis(object):
         # rdd_ = self.tfidf.select(
         #     'id', 'features').rdd
         # rdd_ = rdd_.map(lambda row: row[1].toArray())
-        svd = computeSVD(mat, n_components)
+        svd = computeSVD(mat, n_components, computeU=True)
+        print svd.U.numCols(), svd.U.numRows()
+        print type(svd.V)
         self.similarity_matrix = cosine_similarity(svd.V.toArray())
         # try:
         #     A = np.array([x.features.toArray() for x in self.tfidf.rdd.toLocalIterator()])
@@ -93,7 +116,7 @@ class LatentSemanticAnalysis(object):
         # lambda x: np.argsort(x)[::-1][:6], self.similarity_matrix)
 
         self.five_most_similar_beers = self.sql_context.createDataFrame(map(lambda x: np.argsort(
-            x)[::-1][:6].tolist(), self.similarity_matrix), ['id', 'first', 'second', 'third', 'fourth', 'fifth'])
+            x)[:: -1][: 6].tolist(), self.similarity_matrix), ['id', 'first', 'second', 'third', 'fourth', 'fifth'])
 
         self.tfidf = self.tfidf.join(self.five_most_similar_beers, ['id'], 'inner')
 
@@ -104,11 +127,12 @@ class LatentSemanticAnalysis(object):
 
         # use default arguments to avvoid closure of the environment of the token and db variables
         def save_to_firebase(x, token=self.token, db=self.db):
-            data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style,
-                    'first': x.first, 'second': x.second, 'third': x.third, 'fourth': x.fourth, 'fifth': x.fifth}
-            name = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name}
+            data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style, 'first': x.first, 'second': x.second, 'third': x.third,
+                    'fourth': x.fourth, 'fifth': x.fifth, 'top1': x.top1, 'top2': x.top2, 'top3': x.top3, 'top4': x.top4, 'top5': x.top5, 'top6': x.top6, 'top7': x.top7}
+            # name = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name}
             db.child('beers').child(x.id).set(data, token)
-            db.child('beer_names').child(x.id).set(name, token)
+            # db.child('beer_names').child(x.id).set(name, token)
+            # sleep.(0.1)
 
         self.tfidf.rdd.foreach(lambda x: save_to_firebase(x))
 
@@ -122,19 +146,7 @@ class LatentSemanticAnalysis(object):
 
     def transform(self, n_components):
         self.perform_tfidf()
-        self.singular_value_decomposition(n_components=n_components)
-
-    # def fit(self, df_beer_reviews):
-    #     self.beer_reviews = df_beer_reviews
-    #
-    # def transform(self):
-    #     self.term_frequency()
-    #     self.inverse_document_frequency()
-    #     return self.tfidf
-    #
-    # def fit_transform(self, df_beer_reviews):
-    #     self.fit(df_beer_reviews)
-    #     self.transform()
+        # self.singular_value_decomposition(n_components=n_components)
 
     def get_vocabulary(self):
         return self.vocabulary
