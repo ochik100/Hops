@@ -24,7 +24,7 @@ class LatentSemanticAnalysis(object):
 
     def term_frequency(self):
         # TODO: save vocabulary to firebase
-        cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf', vocabSize=2500)
+        cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf', vocabSize=5000)
         cv_model = cv.fit(self.beer_reviews)
         self.beer_reviews = cv_model.transform(self.beer_reviews)
         self.vocabulary = {idx: val.encode('utf-8') for idx, val in enumerate(cv_model.vocabulary)}
@@ -56,21 +56,24 @@ class LatentSemanticAnalysis(object):
         self.tfidf = self.tfidf.join(df_features, ['id'], 'inner')
 
     def lookup_top_features(self):
+        # TODO: may need to destroy broadcast value?
         broadcastVocab = self.spark_context.broadcast(self.vocabulary)
 
-        def lookup(x):
+        def lookup_helper(x):
             if broadcastVocab.value.get(x) is None:
                 return ""
             else:
                 return broadcastVocab.value.get(x)
-        lookup_udf = udf(lookup)
+        lookup_udf = udf(lookup_helper)
         cols = [column for column in self.tfidf.columns if "top" in column]
         self.tfidf = self.tfidf.select(*(lookup_udf(col(c)).alias(c)
                                          if c in cols else c for c in self.tfidf.columns))
 
     def perform_tfidf(self):
         self.term_frequency()
+        print "TF complete"
         self.inverse_document_frequency()
+        print "IDF complete"
         # return self.tfidf
 
     def rdd_transpose(self, rdd):
@@ -141,7 +144,7 @@ class LatentSemanticAnalysis(object):
 
     def transform(self, n_components):
         self.perform_tfidf()
-        # self.singular_value_decomposition(n_components=n_components)
+        self.singular_value_decomposition(n_components=n_components)
 
     def get_vocabulary(self):
         return self.vocabulary
