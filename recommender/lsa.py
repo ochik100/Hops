@@ -1,14 +1,10 @@
-from time import sleep
-
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 import database
 from pyspark.ml.feature import IDF, CountVectorizer, Normalizer
 from pyspark.mllib.linalg.distributed import RowMatrix
-from pyspark.sql import Row
 from pyspark.sql.functions import col, udf
-from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 from singular_value_decomposition import computeSVD
 
 
@@ -41,28 +37,25 @@ class LatentSemanticAnalysis(object):
         idf_model = idf.fit(self.beer_reviews)
         self.beer_reviews = idf_model.transform(self.beer_reviews)
 
+        self.find_beer_top_features()
+        self.lookup_top_features()
+
+    def find_beer_top_features(self):
         self.tfidf = self.beer_reviews.select(
             'brewery_name', 'beer_name', 'state', 'beer_style', 'features')
 
         self.tfidf = self.tfidf.rdd.zipWithIndex().map(lambda (y, id_): [y[0], y[1], y[2], y[3], y[4], id_]).toDF(
             ['brewery_name', 'beer_name', 'state', 'beer_style', 'features', 'id'])
 
-        print self.tfidf.columns
-        schema = StructType([StructField("id", IntegerType(), True),
-                             StructField("top_features", StringType(), True)])
-
         def get_top_features(x):
-            # idxs = np.argsort(x.features.toArray())[::-1][:7].tolist()
             return [x.id] + np.argsort(x.features.toArray())[::-1][:7].tolist()
-            # return [x.id] + [",".join(map(lambda idx: self.vocabulary[idx], idxs))]
-
-        # rdd_ = self.tfidf.rdd.map(
-            # lambda x: [x.id] + np.argsort(x.features.toArray())[::-1][:7].tolist())
         rdd_ = self.tfidf.rdd.map(lambda x: get_top_features(x))
         df_features = self.sql_context.createDataFrame(
             rdd_, ['id', 'top1', 'top2', 'top3', 'top4', 'top5', 'top6', 'top7'])
 
         self.tfidf = self.tfidf.join(df_features, ['id'], 'inner')
+
+    def lookup_top_features(self):
         broadcastVocab = self.spark_context.broadcast(self.vocabulary)
 
         def lookup(x):
@@ -71,16 +64,17 @@ class LatentSemanticAnalysis(object):
             else:
                 return broadcastVocab.value.get(x)
         lookup_udf = udf(lookup)
-        cols = [x for x in self.tfidf.columns if "top" in x]
+        cols = [column for column in self.tfidf.columns if "top" in column]
         self.tfidf = self.tfidf.select(*(lookup_udf(col(c)).alias(c)
                                          if c in cols else c for c in self.tfidf.columns))
 
     def perform_tfidf(self):
         self.term_frequency()
         self.inverse_document_frequency()
-        return self.tfidf
+        # return self.tfidf
 
     def rdd_transpose(self, rdd):
+        # http://www.data-intuitive.com/2015/01/transposing-a-spark-rdd/
         rddT1 = rdd.zipWithIndex().flatMap(lambda (x, i): [(i, j, e) for (j, e) in enumerate(x)])
         rddT2 = rddT1.map(lambda (i, j, e): (j, (i, e))).groupByKey().sortByKey()
         rddT3 = rddT2.map(lambda (i, x): sorted(
@@ -101,6 +95,7 @@ class LatentSemanticAnalysis(object):
         svd = computeSVD(mat, n_components, computeU=True)
         print svd.U.numCols(), svd.U.numRows()
         print type(svd.V)
+        self.vt = svd.V
         self.similarity_matrix = cosine_similarity(svd.V.toArray())
         # try:
         #     A = np.array([x.features.toArray() for x in self.tfidf.rdd.toLocalIterator()])
