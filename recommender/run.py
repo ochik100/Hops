@@ -15,6 +15,7 @@ if __name__ == '__main__':
     df_reviews = df.select('brewery_name', 'beer_name', 'state', 'beer_style', 'avg_rating', 'text')
     print "df_reviews"
 
+    df_reviews.persist(ps.StorageLevel.MEMORY_AND_DISK)
     try:
         df_beer_reviews = get_beer_reviews_dataframe(df_reviews)
     except:
