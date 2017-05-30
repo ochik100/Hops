@@ -47,6 +47,8 @@ class LatentSemanticAnalysis(object):
         self.tfidf = self.tfidf.rdd.zipWithIndex().map(lambda (y, id_): [y[0], y[1], y[2], y[3], y[4], id_]).toDF(
             ['brewery_name', 'beer_name', 'state', 'beer_style', 'features', 'id'])
 
+        self.tfidf.cache()
+
         def get_top_features(x):
             return [x.id] + np.argsort(x.features.toArray())[::-1][:7].tolist()
         rdd_ = self.tfidf.rdd.map(lambda x: get_top_features(x))
@@ -90,6 +92,7 @@ class LatentSemanticAnalysis(object):
         #     'id', 'features').rdd.map(lambda row: row[1].toArray()).collect()).T))
 
         rdd = self.tfidf.select('id', 'features').rdd.map(lambda row: row[1].toArray())
+        rdd.cache()
         mat = RowMatrix(self.rdd_transpose(rdd))
 
         # rdd_ = self.tfidf.select(
