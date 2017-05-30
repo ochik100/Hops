@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 import database
+import pyspark as ps
 from pyspark.ml.feature import IDF, CountVectorizer, Normalizer
 from pyspark.mllib.linalg.distributed import RowMatrix
 from pyspark.sql.functions import col, udf

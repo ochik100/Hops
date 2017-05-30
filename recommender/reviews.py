@@ -54,7 +54,7 @@ def group_tokens_by_beer(df_tokens):
 
     df_beer_reviews = df_tokens.groupby('brewery_name', 'beer_name', 'state', 'beer_style') \
         .agg(get_all_tokens_udf(collect_list('tokens')).alias('lemmatized_tokens'), count("*").alias("count"), avg("avg_rating").alias("avg")) \
-        .where((col("count") > 25) & (col("avg") >= 3.5))
+        .where((col("count") > 20) & (col("avg") >= 3.0))
 
     return df_beer_reviews
 
