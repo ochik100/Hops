@@ -25,5 +25,5 @@ if __name__ == '__main__':
     print df_beer_reviews.count()
 
     lsa_ = LatentSemanticAnalysis(sc, sql_context, df_beer_reviews)
-    lsa_.transform(n_components=300)
+    lsa_.transform(n_components=500)
     # sc.stop()

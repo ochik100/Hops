@@ -24,18 +24,26 @@ class LatentSemanticAnalysis(object):
 
     def term_frequency(self):
         # TODO: save vocabulary to firebase
-        cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf', vocabSize=5000)
-        cv_model = cv.fit(self.beer_reviews)
-        self.beer_reviews = cv_model.transform(self.beer_reviews)
+        beers = self.beer_reviews
+        cv = CountVectorizer(inputCol='lemmatized_tokens', outputCol='features_tf', vocabSize=7500)
+        # cv_model = cv.fit(self.beer_reviews)
+        # self.beer_reviews = cv_model.transform(self.beer_reviews)
+        cv_model = cv.fit(beers)
+        # self.beer_reviews = cv_model.transform(beers)
+        beers = cv_model.transform(beers)
         self.vocabulary = {idx: val.encode('utf-8') for idx, val in enumerate(cv_model.vocabulary)}
 
         normalizer = Normalizer(inputCol='features_tf', outputCol='features_normalized')
-        self.beer_reviews = normalizer.transform(self.beer_reviews)
+        # self.beer_reviews = normalizer.transform(self.beer_reviews)
+        self.beer_reviews = normalizer.transform(beers)
 
     def inverse_document_frequency(self):
+        beers = self.beer_reviews
         idf = IDF(inputCol='features_normalized', outputCol='features')
-        idf_model = idf.fit(self.beer_reviews)
-        self.beer_reviews = idf_model.transform(self.beer_reviews)
+        # idf_model = idf.fit(self.beer_reviews)
+        # self.beer_reviews = idf_model.transform(self.beer_reviews)
+        idf_model = idf.fit(beers)
+        self.beer_reviews = idf_model.transform(beers)
 
         self.find_beer_top_features()
         self.lookup_top_features()
@@ -103,30 +111,15 @@ class LatentSemanticAnalysis(object):
         print type(svd.V)
         self.vt = svd.V
         self.similarity_matrix = cosine_similarity(svd.V.toArray())
-        # try:
-        #     A = np.array([x.features.toArray() for x in self.tfidf.rdd.toLocalIterator()])
-        # except:
-        #     pass
-        # A = np.array([x.features.toArray() for x in self.tfidf.rdd.toLocalIterator()])
-        # svd = TruncatedSVD(n_components=n_components)
-        # svd_model = svd.fit(A)
-        # self.vt = svd_model.transform(A)
-        # self.similarity_matrix = cosine_similarity(self.vt)
-
-        # self.five_most_similar_beers = map(
-        # lambda x: np.argsort(x)[::-1][:6], self.similarity_matrix)
 
         self.five_most_similar_beers = self.sql_context.createDataFrame(map(lambda x: np.argsort(
             x)[:: -1][: 6].tolist(), self.similarity_matrix), ['id', 'first', 'second', 'third', 'fourth', 'fifth'])
 
         self.tfidf = self.tfidf.join(self.five_most_similar_beers, ['id'], 'inner')
 
-        #     , 'attr1': x.attr1, 'attr2': x.attr2, 'attr3': x.attr3, 'attr4': x.attr4, 'attr5': x.attr5
-        #
-
         self.token, self.db = database.connect_to_database()
 
-        # use default arguments to avvoid closure of the environment of the token and db variables
+        # use default arguments to avoid closure of the environment of the token and db variables
         def save_to_firebase(x, token=self.token, db=self.db):
             data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style, 'first': x.first, 'second': x.second, 'third': x.third,
                     'fourth': x.fourth, 'fifth': x.fifth, 'top1': x.top1, 'top2': x.top2, 'top3': x.top3, 'top4': x.top4, 'top5': x.top5, 'top6': x.top6, 'top7': x.top7}
@@ -136,14 +129,6 @@ class LatentSemanticAnalysis(object):
             # sleep.(0.1)
 
         self.tfidf.rdd.foreach(lambda x: save_to_firebase(x))
-
-        # for x in self.tfidf.rdd.toLocalIterator():
-        #     data = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name, 'state': x.state, 'beer_style': x.beer_style,
-        #             'first': x.first, 'second': x.second, 'third': x.third, 'fourth': x.fourth, 'fifth': x.fifth}
-        #     name = {'brewery_name': x.brewery_name, 'beer_name': x.beer_name}
-        #     db.child('beers').child(x.id).set(data, token)
-        #     db.child('beer_names').child(x.id).set(name, token)
-        # np.save('../data/five_most_similar_beers.npy', self.five_most_similar_beers)
 
     def transform(self, n_components):
         self.perform_tfidf()
