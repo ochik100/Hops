@@ -1,11 +1,11 @@
 
 import string
 
-import numpy as np
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
+import pyspark as ps
 from pyspark.sql.functions import avg, col, collect_list, count, udf
 from pyspark.sql.types import ArrayType, StringType
 
@@ -60,7 +60,7 @@ def group_tokens_by_beer(df_tokens):
 
 
 def get_beer_reviews_dataframe(df_reviews):
-    df_reviews.persist(StorageLevel.MEMORY_AND_DISK)
+    df_reviews.persist(ps.StorageLevel.MEMORY_AND_DISK)
     lemmatize_review_udf = udf(lambda x: preprocess_review_text(x), ArrayType(StringType()))
     df_tokens = df_reviews.withColumn("tokens", lemmatize_review_udf('text'))
     df_beer_reviews = group_tokens_by_beer(df_tokens)
