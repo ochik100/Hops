@@ -20,7 +20,7 @@ if __name__ == '__main__':
     except:
         pass
     df_beer_reviews = get_beer_reviews_dataframe(df_reviews)
-    df_beer_reviews.cache()
+    df_beer_reviews.persist(ps.StorageLevel.MEMORY_AND_DISK)
     print "df_beer_reviews"
     print df_beer_reviews.count()
 
