@@ -62,5 +62,6 @@ def group_tokens_by_beer(df_tokens):
 def get_beer_reviews_dataframe(df_reviews):
     lemmatize_review_udf = udf(lambda x: preprocess_review_text(x), ArrayType(StringType()))
     df_tokens = df_reviews.withColumn("tokens", lemmatize_review_udf('text'))
+    df_tokens.persist(ps.StorageLevel.MEMORY_AND_DISK)
     df_beer_reviews = group_tokens_by_beer(df_tokens)
     return df_beer_reviews
