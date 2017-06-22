@@ -9,15 +9,28 @@
   <div class="row">
     {% if results|length > 0 %}
       {% if beer_name %}
-        <h2>Top 5 Beers Similar to {{ beer_name[0] }} by {{ beer_name[1] }}</h2>
+        <div class="list-group-item">
+          <h3>{{ beer_name[0] }} by {{ beer_name[1] }}</h3>
+          <p>
+            Style: {{beer_name[9]}}
+          </p>
+          <p>
+            Top Features: {{beer_name[2]}}, {{beer_name[3]}}, {{beer_name[4]}}, {{beer_name[5]}}, {{beer_name[6]}}, {{beer_name[7]}}, {{beer_name[8]}}
+          </p>
+        </div>
+        <h3>Top 5 Beers Recommendations</h3>
       {% endif %}
       <br>
       <div id="results">
         <div class="list-group">
           {% for result in results %}
             <a class="list-group-item">
-              <h4 id='beer' class="list-group-item-heading">{{ result[0] }}</h4>
-              <p class="list-group-item-text">{{ result[1] }}</p>
+              <div>
+                <h4 id='beer' class="list-group-item-heading">{{ result[0] }}</h4>
+                <p><i>{{ result[1]}}</i></p>
+              </div>
+              <p class="list-group-item-text">Style: {{ result[2] }} </p>
+              <p class="list-group-item-text">Top Features: {{ result[3] }}, {{ result[4] }}, {{ result[5] }}, {{ result[6] }}, {{ result[7] }}, {{ result[8] }}, {{ result[9] }} </p>
             </a>
           {% endfor %}
         </div>
@@ -25,209 +38,4 @@
     {% endif %}
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-var typeaheadSource = ['ALTitude Altbier - Altitude Chophouse & Brewery',
- 'Road Warrior Red - 10-56 Brewing Company',
- 'Valor Ale - 14th Star Brewing Co.',
- 'Blood Drop Red Ale - 49th State Brewing Company',
- 'American Beauty - 7 Mile Brewery',
- 'Soulful Ginger - 16 Mile Brewing Company',
- 'Lake Sandy Rye - 56 Brewing',
- "Ol' Glory - American Beverage LLC",
- 'Bifrost Barley Wine - Brutopia Brewery',
- 'Barking Seal Black IPA - 10-56 Brewing Company',
- 'Reaper And The Rye - 515 Brewing Company',
- "Charlie's Cherry - Cheery Chamomile Blonde Bombshell - 10-56 Brewing Company",
- 'Skinny Dipper - 7 Mile Brewery',
- 'Golden Naked Ale - 101 North Brewing Company',
- "Blues' Golden Ale - 16 Mile Brewing Company",
- 'Blonde Ale - Big Timber Brewing',
- 'Southern Belle - 3 Stars Brewing Company',
- 'Oregon Brown Ale - 10 Barrel Brewing Co.',
- 'Brown Ale - 405 Brewing Co.',
- 'American Brown Ale - 10 Barrel Brewing Co.',
- 'Ebony & Ivory - 3 Stars Brewing Company',
- 'Brutopian Bonfire - Brutopia Brewery',
- 'Hell Bent - Drekker Brewing Company',
- 'Two To The Dome - 3 Stars Brewing Company',
- 'Adsultim - 2nd Story Brewing Co.',
- 'Abunai.P.A. - Beer Lab HI',
- 'Ales for ALS Double IPA - 12 Gates Brewing Company',
- 'Batch 72 - 14th Star Brewing Co.',
- 'Double Bit - Big Timber Brewing',
- 'Nimbus 2000 - Beer Lab HI',
- 'Random Red Rye - 2 Row Brewing',
- 'First Kiss - 3 Sheeps Brewing',
- 'Sinister - 18th Street Brewery',
- 'Big Bad Wolf - Barbarian Brewing',
- 'The Morrigan - Barbarian Brewing',
- 'Liquid Spiritual Delight (Blueprint Coffee) - 2nd Shift Brewing',
- 'Abita Bourbon Street Chocolate Stout - Abita Brewing Co.',
- 'FDR - 405 Brewing Co.',
- 'Grave Concerns - 12 Gates Brewing Company',
- 'Astute Stout - 30 Mile Brewing Co.',
- '(512) Imperial Stout - (512) Brewing Company',
- 'IPA - Big Timber Brewing',
- 'Battlefield IPA - Avondale Brewing Co.',
- 'Hop Punch I.P.A - 406 Brewing Company',
- 'Sub-Mission IPA - 2nd Shift Brewing',
- 'Heroine India Pale Ale - 101 North Brewing Company',
- 'Duckweed - 40 Arpent Brewing Company',
- 'Hayrack - Baraboo Brewing Company',
- '8-Bit IPA! - AntiVillain Ale Co.',
- 'Baby Fight Club - 30 Mile Brewing Co.',
- 'West Coast IPA - 12 Gates Brewing Company',
- 'Surrender Dorothy - 7 Locks Brewing',
- 'India Pale Ale - 10th District Brewing Co.',
- '2 Tones IPA - 2 Tones Brewing Co.',
- 'Cloud Machine - Bad Shepherd Beer Company',
- 'The Rock IPA - 3rd Rock Brewing Co.',
- 'Little Wolf IPA - Barbarian Brewing',
- 'Brew Free Or Die IPA - 21st Amendment Brewery',
- 'IPA1A - 26 Degree Brewing Company',
- 'OJ IPA - 515 Brewing Company',
- '603 Cogway IPA - 603 Brewery',
- 'Rhythmic Rye - 12 String Brewing Company',
- 'Black Ice - 603 Brewery',
- 'Aiken West Coast Pale Ale - Aiken Brewing Company',
- '(512) Pale - (512) Brewing Company',
- 'Pale Ale - Alibi Ale Works',
- 'Pass\xc3\xa9 - 515 Brewing Company',
- 'Vog Punch - Beer Lab HI',
- 'Summatime Tequila Barrel Aged With Limes - 603 Brewery',
- 'Harvester Of Ryes - Against The Grain Brewery & Smokehouse',
- 'I Pee Lager - 26 Degree Brewing Company',
- 'Golden - Abita Brewing Co.',
- 'Mexican Spring - 515 Brewing Company',
- 'Aiken Honey Wheat - Aiken Brewing Company',
- 'Blueprint Series Hoppy Wheat - 603 Brewery',
- 'Dreamsickle - 350 Brewing Co.',
- 'Woodpecker Wheat - Baraboo Brewing Company',
- 'Motor Patrol Vanilla Java Porter - 10-56 Brewing Company',
- '(512) Pecan Porter - (512) Brewing Company',
- 'Limited Release Beer 2: American Porter - 2 Row Brewing',
- '(512) Raspberry Beret - (512) Brewing Company',
- "Bosco's Revenge - 7 Mile Brewery",
- "Hickory Stick Stout - Amos Howard's Brew Pub",
- 'Cashmere Hammer - 3 Sheeps Brewing',
- 'Salem Sue - Buffalo Commons Brewing Company',
- 'Bourbon Barrel Ewephoria - 3 Sheeps Brewing',
- 'Rubus Nocturne - Alibi Ale Works',
- 'Loonar Uprising - 10K Brewing',
- 'Grace Anne Stout - Bitter Esters Brewhouse',
- 'Coffee Stout - 603 Brewery',
- 'New Basin Stout - 40 Arpent Brewing Company',
- 'Cat Spit Stout - 2nd Shift Brewing',
- 'Oyster Stout - 16 Mile Brewing Company',
- 'Maple Breakfast Stout - 14th Star Brewing Co.',
- 'Hazy Morning Coffee Stout - Apple Blossom Brewing Co.',
- 'Farm House - 7 Locks Brewing',
- 'Two Headed Unicorn - 3 Stars Brewing Company',
- 'Mystery Barrel Sour 1.0 - Barbarian Brewing',
- 'Down Pourter - French Oak & Mescal Edition - 1702 / The Address Brewing Co.',
- "Monks' Dark Ale - Abbey Beverage Company (Monastery of Christ in the Desert)",
- "Monks' Ale - Abbey Beverage Company (Monastery of Christ in the Desert)",
- 'Golden Boy - 30 Mile Brewing Co.',
- 'Coyne & Uni-Weiss-ity - Beer Lab HI',
- 'California Common - 23rd Street Brewery',
- "Monks' Dubbel Ale - Abbey Beverage Company (Monastery of Christ in the Desert)",
- 'Seeing Dubbel - 5 Seasons Westside',
- 'The Slam Dunkel - 5 Seasons Westside',
- "Ol' Samson - Barbarian Brewing",
- 'Manly Barley Wine Ale - 405 Brewing Co.',
- 'Aiken Olde Aiken Ale - Aiken Brewing Company',
- 'Harvest Ale - 16 Mile Brewing Company',
- "Export IPA - Amos Howard's Brew Pub",
- 'Aiken English IPA - Aiken Brewing Company',
- 'British IPA - 5 Seasons Westside',
- 'Great Pumpkin Porter - 2nd Story Brewing Co.',
- "Ne'er- Do- Well Coffee Pub Ale - Bitter Esters Brewhouse",
- 'Roll Over - Drekker Brewing Company',
- 'Back Bay ESB - Biloxi Brewing Company',
- 'Amber Sun Ale - 16 Mile Brewing Company',
- 'Black Gold Breakfast Blend - Biloxi Brewing Company',
- 'Black Gold - Biloxi Brewing Company',
- "7200' Stout - Altitude Chophouse & Brewery",
- 'Twisted Stem - Baraboo Brewing Company',
- 'Seed-Free & Joy - 16 Mile Brewing Company',
- 'Golden Pumpkin Ale - AntiVillain Ale Co.',
- 'Swill Beer - 10 Barrel Brewing Co.',
- 'Fireworks Blueberry Ale - Baraboo Brewing Company',
- 'Salty Dog - Biloxi Brewing Company',
- 'Gose - 10th District Brewing Co.',
- 'Double Crimson Phog - 23rd Street Brewery',
- 'Shillelagh Irish Red - Altitude Chophouse & Brewery',
- 'Red Bean And Rice Ale - 40 Arpent Brewing Company',
- 'Crimson Phog - 23rd Street Brewery',
- 'Bohemian Keller Pilsner - 5 Seasons Westside',
- 'Streetcar Kolsch - Avondale Brewing Co.',
- 'Biloxi Beach Blonde - Biloxi Brewing Company',
- 'Starsky & Dutch - 3 Stars Brewing Company',
- '40 Arpent Milk Stout - 40 Arpent Brewing Company',
- 'Hello - 3 Sheeps Brewing',
- 'Oktoberfest - 14th Star Brewing Co.',
- 'Hawktoberfest - 23rd Street Brewery',
- 'Sweet Vanilla Oatmeal Stout - 10K Brewing',
- 'Sour Harvest - Barbarian Brewing',
- '-12* Quadruple - 49th State Brewing Company',
- 'Koko Beware - 350 Brewing Co.',
- 'Bo & Luke - Against The Grain Brewery & Smokehouse',
- 'Imperial Blud - 18th Street Brewery',
- 'Naughty Aud - 101 North Brewing Company',
- "T'ryed And True - 10 Barrel Brewing Co.",
- 'Stigmata Red Rye Ale - 101 North Brewing Company',
- 'Riesling Saison - 105 West Brewing Company',
- 'Peppercorn Saison - 3 Stars Brewing Company',
- 'Mosaic Saison - 603 Brewery',
- 'Shell Shocked - Brutopia Brewery',
- 'Dangereux - 2 Row Brewing',
- 'Dark Saison - Alibi Ale Works',
- 'Tart Apricot Saison - Avondale Brewing Co.',
- 'Money Blend - American Solera',
- "Robespierre's Revenge - 26 Degree Brewing Company",
- 'Noir - Barbarian Brewing',
- 'Spring Street Saison - Avondale Brewing Co.',
- 'The Truth - Beer Lab HI',
- 'Snakeden - 7 Locks Brewing',
- 'Dark Saison - 5 Seasons Westside',
- 'Aiken Strong Scotch Ale - Aiken Brewing Company',
- '21st Street Scotch Ale - 7 Hills Brewing Company',
- "Scottish Ale - Amos Howard's Brew Pub",
- 'Scottish Ale - 105 West Brewing Company',
- "Monks' Tripel - Abbey Beverage Company (Monastery of Christ in the Desert)",
- 'Buffalo Tripel - 12 Gates Brewing Company',
- '350 Porter W/ Caramel - 350 Brewing Co.',
- 'Red Granite Lager - Baraboo Brewing Company',
- 'Wicked Warmer - AntiVillain Ale Co.',
- 'Belgian Wit - 23rd Street Brewery',
- 'Mill City White - Avondale Brewing Co.',
- 'Nit Wit - 7 Mile Brewery',
- 'Hibiscus Wit - 2nd Shift Brewing',
- 'Dark White - 5 Seasons Westside',
- "Monks' Wit - Abbey Beverage Company (Monastery of Christ in the Desert)",
- 'Venus Belgian White - 5 Seasons Westside',
- 'Allagash White - Allagash Brewing Company'];
-
-$(document).ready(function($) {
-  function getIndex(item) {
-      var idx = typeaheadSource.indexOf(item)
-      return idx
-  }
-  function displayResult(item) {
-
-      document.getElementById("index").value = typeaheadSource.indexOf(item.text)
-
-      $('.alert').show().html( typeaheadSource.indexOf(item.text) + ", " + document.getElementById("index").value);
-  }
-  $('#test').typeahead({
-    source: typeaheadSource,
-    onSelect: displayResult
-  });
-
-
-})
-</script>
 {% endblock %}
